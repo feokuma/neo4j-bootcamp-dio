@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  neo4j:
+    image: neo4j:5.15
+    container_name: neo4j-container
+    restart: unless-stopped
+    ports:
+      - "7474:7474"   # HTTP
+      - "7687:7687"   # Bolt
+    environment:
+      # Autenticação (usuário: neo4j, senha: password)
+      - NEO4J_AUTH=neo4j/password
+      
+      # Configurações de memória
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_memory_pagecache_size=1G
+      
+      # Configurações de segurança
+      - NEO4J_dbms_security_procedures_unrestricted=gds.*,apoc.*
+      - NEO4J_dbms_security_procedures_allowlist=gds.*,apoc.*
+      
+      # Habilitar plugins APOC (Advanced Procedures On Cypher)
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      
+      # Configurações de rede
+      - NEO4J_dbms_default__listen__address=0.0.0.0
+      - NEO4J_dbms_default__advertised__address=localhost
+      
+    volumes:
+      # Persistência de dados
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    
+    # Healthcheck para verificar se o serviço está funcionando
+    healthcheck:
+      test: ["CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "RETURN 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  neo4j_data:
+    driver: local
+  neo4j_logs:
+    driver: local
+  neo4j_import:
+    driver: local
+  neo4j_plugins:
+    driver: local
